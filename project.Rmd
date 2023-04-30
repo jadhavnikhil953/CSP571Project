@@ -1,0 +1,476 @@
+---
+title: "CSP 571 Project"
+output: html_notebook
+---
+
+## Khiem Nguyen (A20442356)
+
+### Set up library
+```{r}
+library(ggplot2)
+library(caret)
+#install.packages("tm")
+library(tm)
+#install.packages ("e1071")
+library(e1071)
+#install.packages("Hmisc")
+library(Hmisc)
+
+library(rpart)
+library(rpart.plot)
+library(randomForest)
+library(dplyr)
+#install.packages("ggcorrplot")
+library(ggcorrplot)
+#install.packages("funModeling")
+library(funModeling)
+#install.packages("GGally")
+library(GGally)
+library(glmnet)
+library(e1071)
+#install.packages('kernlab')
+library(kernlab)
+options(tibble.print_max = Inf)
+
+```
+
+### Set up dataset
+```{r}
+heart <- read.csv('heart.csv')
+View(head(heart))
+```
+Describe dataset
+```{r}
+summary(heart)
+```
+
+Check null values
+```{r}
+colSums(is.na(heart))
+```
+
+```{r}
+plot_num(heart)
+```
+
+Correlation
+```{r}
+correlation_table(data=heart, target="output")
+```
+Drop low correlation columns
+```{r}
+heart <- subset(heart, select = -c(fbs, chol, restecg))
+View(head(heart))
+```
+
+Check unique values
+```{r}
+apply(heart, 2, function(x) length(unique(x)))
+```
+
+Numerical and categorical variables
+```{r}
+numeric_var <- c("age", "trtbps", "chol", "thalachh", "oldpeak")
+categoric_var <- c("sex", "cp", "fbs", "rest_ecg", "exang", "slope", "ca", "thal", "target")
+```
+### Describe numerical features
+Describe "age" feature
+
+```{r}
+summary(heart$age)
+```
+
+```{r}
+x <- heart$age
+hist(x, prob = TRUE, breaks = 20, col="orange", xlab="Age",
+   main="Age")
+lines(density(heart$age), # density plot
+ lwd = 2, # thickness of line
+ col = "chocolate3")
+```
+
+```{r}
+plot(heart$output, heart$age, pch=19, xlab = 'heart attack', ylab = 'age')
+```
+
+
+```{r}
+plot(heart$age, heart$output, pch=19, xlab = 'heart attack', ylab = 'age')
+```
+
+Describe "trtbps" (resting blood pressure) feature
+
+```{r}
+summary(heart$trtbps)
+```
+
+```{r}
+x <- heart$trtbps
+hist(x, prob = TRUE, breaks = 20, col="orange", xlab="Resting blood pressure (mmHg)",
+   main="Resting blood pressure")
+lines(density(x), # density plot
+ lwd = 2, # thickness of line
+ col = "chocolate3")
+```
+
+```{r}
+plot(heart$output, heart$trtbps, pch=19, xlab = 'heart attack', ylab = 'resting blood pressure')
+```
+
+Describe "chol" (cholesterol) feature
+```{r}
+summary(heart$chol)
+```
+
+```{r}
+x <- heart$chol
+hist(x, prob = TRUE, breaks = 20, col="orange", xlab="cholesterol (mg/dl)",
+   main="Cholesterol")
+lines(density(x), # density plot
+ lwd = 2, # thickness of line
+ col = "chocolate3")
+```
+
+
+```{r}
+plot(heart$output, heart$chol, pch=19, xlab = 'heart attack', ylab = 'choresterol')
+```
+
+describe "thalach" (maximum heart rate) feature
+
+```{r}
+summary(heart$thalachh)
+```
+
+```{r}
+x <- heart$thalachh
+hist(x, prob = TRUE, breaks = 20, col="orange", xlab="Maximum heart rate achieved",
+   main="thalachh")
+lines(density(x), # density plot
+ lwd = 2, # thickness of line
+ col = "chocolate3")
+```
+
+```{r}
+plot(heart$output, heart$thalachh, pch=19, xlab = 'heart attack', ylab = 'max heart rate')
+```
+
+Plot oldpeak
+```{r}
+x <- heart$oldpeak
+hist(x, prob = TRUE, breaks = 20, col="orange", xlab="ST depression",
+   main="oldpeak")
+lines(density(x), # density plot
+ lwd = 2, # thickness of line
+ col = "chocolate3")
+```
+Pair plot
+```{r}
+numeric_var <- c("age", "trtbps", "chol", "thalachh", "oldpeak")
+ggpairs(heart[numeric_var])
+```
+### Correlation plot
+```{r}
+#df <- select(heart, c('age','trtbps', 'chol', 'thalachh'))
+r <- cor(heart)
+png(height=1200, width=1500, pointsize=15, file="overlap.png")
+ggcorrplot(r, lab = TRUE)
+#ggcorrplot(r, type = "lower")
+
+```
+
+### Describe categorical value
+```{r}
+cols <- c('sex', 'exng', 'thall', 'cp', 'fbs','restecg', 'caa', 'slp')
+ggpairs(heart[cols])
+```
+
+```{r}
+cols <- c('sex', 'exng', 'thall', 'cp', 'fbs','restecg', 'caa', 'slp')
+freq(data = heart, input = cols)
+```
+
+```{r}
+ggplot(heart, aes(factor(output), fill = factor(sex))) +
+  geom_bar(position = "dodge2")
+```
+
+```{r}
+ggplot(heart, aes(factor(cp), fill = factor(output))) +
+  geom_bar(position = "dodge2")
+```
+
+```{r}
+ggplot(heart, aes(factor(fbs), fill = factor(output))) +
+  geom_bar(position = "dodge2")
+```
+
+```{r}
+ggplot(heart, aes(factor(restecg), fill = factor(output))) +
+  geom_bar(position = "dodge2")
+```
+
+```{r}
+ggplot(heart, aes(factor(exng), fill = factor(output))) +
+  geom_bar(position = "dodge2")
+```
+
+```{r}
+ggplot(heart, aes(factor(slp), fill = factor(output))) +
+  geom_bar(position = "dodge2")
+```
+
+```{r}
+ggplot(heart, aes(factor(caa), fill = factor(output))) +
+  geom_bar(position = "dodge2")
+```
+
+```{r}
+ggplot(heart, aes(factor(thall), fill = factor(output))) +
+  geom_bar(position = "dodge2")
+```
+
+```{r}
+ggplot(heart, aes(factor(output), fill = factor(output))) +
+  geom_bar(position = "dodge2")
+```
+
+```{r}
+freq(data=heart_disease)
+
+```
+### Training preparation
+
+Factorize target data
+```{r}
+heart$output <- as.factor(heart$output)
+```
+
+Split train/test
+```{r}
+set.seed(1)
+split <- createDataPartition(heart$output,p=0.8,list=FALSE)
+train_data <-heart[split,]
+test_data <- heart[-split,]
+```
+
+### Fit a decision tree
+```{r}
+tree <- rpart(output~., method="class", data = train_data)
+rpart.plot(tree)
+```
+Evaluate the decision tree on the train set
+```{r}
+p <- predict(tree, train_data, type = "class")
+confusionMatrix(p, train_data$output)
+```
+
+Evaluate the decision tree on the test set
+```{r}
+p <- predict(tree, test_data, type = "class")
+confusionMatrix(p, test_data$output)
+```
+### Tune hyperparameter for decision tree
+
+```{r}
+set.seed(1)
+train_control <- trainControl(method = "repeatedcv",   # Use cross validation
+                              number = 10,             # Use 10 partitions
+                              repeats = 10)             # Repeat 2 times
+
+val_tree <- train(
+   output ~ ., 
+   data = train_data, 
+   method = "rpart",
+   tuneGrid = expand.grid(cp = 0.01),
+   trControl= train_control
+)
+val_tree
+```
+
+```{r}
+p <- predict(val_tree, test_data, type = "raw")
+confusionMatrix(p, test_data$output)
+```
+
+plot cp
+```{r}
+plotcp(tree,)
+printcp(tree)
+tree$cptable[which.min(tree$cptable[,"xerror"]),"CP"]
+```
+
+prune tree with optimal cp
+```{r}
+ptree<- prune(tree, cp= 0.15)
+rpart.plot(ptree)
+```
+
+Evaluate the pruned tree
+```{r}
+p <- predict(ptree, test_data, type = "class")
+confusionMatrix(p, test_data$output)
+```
+Variable importance
+```{r}
+ptree_var = caret::varImp(ptree, scale = TRUE)
+ptree_var
+```
+
+```{r}
+ggplot(data= ptree_var, aes(x=rownames(ptree_var),y=Overall)) +
+  geom_bar(position="dodge",stat="identity",width = 0, color = "black") + 
+  coord_flip() + geom_point(color='skyblue') + xlab(" Importance Score")+
+  ggtitle("Variable Importance") + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(panel.background = element_rect(fill = 'white', colour = 'black'))
+```
+
+
+### Fit a random forest to the training set
+```{r}
+forest <- randomForest(output ~., method="class", data = train_data)
+```
+
+Evaluate random forest on the training data
+```{r}
+p <- predict(forest, train_data, type = "class")
+confusionMatrix(p, train_data$output)
+```
+
+Evaluate random forest on the test data
+```{r}
+p <- predict(forest, test_data, type = "class")
+confusionMatrix(p, test_data$output)
+```
+
+```{r}
+varImpPlot(forest)
+```
+
+### Tune the random forest
+```{r}
+bootstrap <- train(
+   output ~ ., 
+   data = train_data, 
+   method = "rf",
+   tuneGrid = expand.grid(mtry = 1:10), # searching around mtry=3
+)
+bootstrap
+```
+
+```{r}
+plot(bootstrap)
+```
+Evaluate
+```{r}
+p <- predict(bootstrap, test_data, type = "raw")
+confusionMatrix(p, test_data$output)
+```
+
+### Logistic regression
+```{r}
+set.seed(1)
+fit <- glm(formula = output ~ cp + oldpeak + thall + thalachh, family = binomial(link='logit'), data = train_data)
+fit
+```
+
+Evaluate on train data
+```{r}
+p <- predict(fit, train_data, type = "response")
+p <- ifelse(p > 0.5,1,0)
+acc <- mean(p == train_data$output)
+acc
+```
+
+Evaluate on test data
+```{r}
+p <- predict(fit, test_data, type = "response")
+p <- ifelse(p > 0.5,1,0)
+acc <- mean(p == test_data$output)
+acc
+```
+
+plot AUC
+```{r}
+library(ROCR)
+p <- predict(fit, test_data, type = "response")
+pr <- prediction(p, test_data$output)
+prf <- performance(pr, measure = "tpr", x.measure = "fpr")
+plot(prf)
+auc <- performance(pr, measure = "auc")
+auc <- auc@y.values[[1]]
+```
+
+### Performing Ridge 
+Getting the predictors and responses from training data
+```{r}
+x <- model.matrix(output~., train_data)[,-1]
+y <- as.factor(train_data$output)
+```
+
+Perform a ridge regression
+```{r}
+lambdas <- 10^seq(5, -5, by = -.1)
+ridge <- cv.glmnet(x, y, alpha = 0, family = binomial(link='logit'), nfold = 5, lambda = lambdas)
+```
+
+Determine the minimu value for lambda
+```{r}
+min_lambda <- ridge$lambda.min
+min_lambda
+```
+Fitting a Ridge Regression with min lambda
+```{r}
+ridge_fit <- glmnet(x, y, alpha = 0, family = binomial(link='logit'), nfold = 5, lambda = min_lambda)
+summary(ridge_fit)
+plot(ridge)
+```
+Evaluate Ridge regression on the test data
+```{r}
+x_ridge <- model.matrix(output~., test_data)[,-1]
+preds_ridge <- predict(ridge_fit, s = min_lambda, newx = x_ridge)
+p <- ifelse(preds_ridge > 0.5,1,0)
+acc <- mean(p == test_data$output)
+acc
+```
+
+## Fit support vector machine
+```{r}
+svm1 <- svm(formula = output~.,
+                 data = train_data,
+                 type = 'C-classification',
+                 kernel = 'linear')
+```
+
+Evaluate on train data
+```{r}
+p <- predict(svm1, train_data, type = "class")
+confusionMatrix(p, train_data$output)
+```
+
+Evaluate on test data
+```{r}
+p <- predict(svm1, test_data, type = "class")
+confusionMatrix(p, test_data$output)
+```
+
+## Cross validation 
+```{r}
+trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+grid <- expand.grid(C = c(0,0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2,5))
+svm_Linear <- train(output ~., data = train_data, 
+                    method = "svmLinear",
+                    trControl=trctrl,
+                    preProcess = c("center", "scale"),
+                    tuneGrid = grid,
+                    tuneLength = 10)
+
+plot(svm_Linear)
+svm_Linear
+```
+
+```{r}
+test_pred_grid <- predict(svm_Linear, newdata = test_data)
+confusionMatrix(table(test_pred_grid, test_data$output))
+```
