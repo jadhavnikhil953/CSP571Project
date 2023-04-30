@@ -20,7 +20,7 @@ After performing the EDA, we trained models on the 80-20 train to test split usi
 
 ## Results
 
-Our results show that the Random Forest model obtains the highest performance with the chest pain type (cp) being the most important factor in determining the risk of heart disease. The accuracy of the model was 90%, and the F1 score was 0.91.
+Our results show that the Random Forest model obtains the highest performance with the chest pain type (cp) being the most important factor in determining the risk of heart disease. The accuracy of the model was 100% for training data and 85% for testing data.
 
 ## Conclusion
 
